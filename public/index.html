@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <meta name="theme-color" content="#4CAF50">
+
+  <title>Екологічний моніторинг</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f4;
+    }
+    
+
+    header {
+      background-color: #4CAF50;
+      color: white;
+      text-align: center;
+      padding: 15px;
+    }
+
+    .nav-buttons {
+      display: flex;
+      justify-content: center;
+      margin: 20px 0;
+    }
+
+    .nav-buttons button {
+      padding: 10px 20px;
+      margin: 0 10px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    .nav-buttons button:hover {
+      background-color: #45a049;
+    }
+
+    footer {
+      background-color: #333;
+      color: white;
+      text-align: center;
+      padding: 10px;
+    }
+
+    .map-container {
+      height: 500px;
+      width: 100%;
+      margin-top: 20px;
+    }
+
+    .weather-icons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+      padding: 10px;
+    }
+
+    .weather-icons .icon-box {
+      background-color: white;
+      padding: 15px;
+      border-radius: 5px;
+      width: 30%;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+
+    #swipe-container {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  height: 60px;
+  background-color: #4CAF50;
+  z-index: 9999;
+}
+
+#swipe-button {
+  width: 60px;
+  height: 60px;
+  background-color: #fff;
+  text-align: center;
+  line-height: 60px;
+  border-radius: 30px;
+  position: absolute;
+  left: 0;
+  transition: left 0.3s;
+  user-select: none;
+}
+
+
+    .weather-icons .icon-box img {
+      width: 80%;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Екологічний моніторинг</h1>
+  <p>Оцінка якості води, повітря та ґрунту</p>
+</header>
+
+<!-- Навігаційні кнопки -->
+<div class="nav-buttons">
+  <button onclick="window.location.href='air-quality.html'">Якість повітря</button>
+  <button onclick="window.location.href='water-quality.html'">Якість води</button>
+  <button onclick="window.location.href='soil-quality.html'">Якість ґрунту</button>
+</div>
+
+<!-- Карта -->
+<div id="map" class="map-container"></div>
+
+<!-- Анімовані погодні іконки -->
+<div class="weather-icons">
+  <div class="icon-box">
+    <h3>Погода в вашому регіоні</h3>
+    <img id="weather-icon" src="https://media.giphy.com/media/l0MYlTV2x6ZjbbkWg/giphy.gif" alt="weather icon">
+    <p>Актуальний стан повітря</p>
+  </div>
+
+  <div class="icon-box">
+    <h3>Вода</h3>
+    <img id="water-icon" src="https://media.giphy.com/media/d2lcHJTG5Tscg/giphy.gif" alt="water icon">
+    <p>Якість води в регіоні</p>
+  </div>
+
+  <div class="icon-box">
+    <h3>Ґрунт</h3>
+    <img id="soil-icon" src="https://media.giphy.com/media/4yOmeL2hdzv6g/giphy.gif" alt="soil icon">
+    <p>Стан ґрунту</p>
+  </div>
+</div>
+
+<!-- Форма входу та реєстрації -->
+<section style="max-width: 400px; margin: 40px auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
+  <h2 style="text-align:center;">Аутентифікація</h2>
+  <div style="display: flex; justify-content: space-around; margin-bottom: 10px;">
+    <button onclick="toggleForm('login')">Увійти</button>
+    <button onclick="toggleForm('register')">Реєстрація</button>
+  </div>
+
+  <form id="loginForm" style="display: none;" onsubmit="handleLogin(event)">
+    <input type="email" placeholder="Email" id="loginEmail" required><br><br>
+    <input type="password" placeholder="Пароль" id="loginPassword" required><br><br>
+    <button type="submit">Увійти</button>
+  </form>
+
+  <form id="registerForm" style="display: none;" onsubmit="handleRegister(event)">
+    <input type="email" placeholder="Email" id="registerEmail" required><br><br>
+    <input type="password" placeholder="Пароль" id="registerPassword" required><br><br>
+    <input type="text" placeholder="Регіон" id="registerRegion" required><br><br>
+    <button type="submit">Зареєструватися</button>
+  </form>
+
+  <p id="authMessage" style="color: green; text-align: center; margin-top: 10px;"></p>
+</section>
+<!-- Форма сповіщення про екологічну проблему -->
+<section style="max-width: 500px; margin: 40px auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
+  <h2 style="text-align:center;">Надіслати екосповіщення</h2>
+  <form id="reportForm" onsubmit="submitReport(event)">
+    <label>Тип проблеми:</label><br>
+    <input type="text" id="reportType" required><br><br>
+
+    <label>Опис:</label><br>
+    <textarea id="reportDescription" rows="4" required></textarea><br><br>
+
+    <button type="submit">Надіслати</button>
+  </form>
+  <p id="reportMessage" style="text-align:center; color: green; margin-top: 10px;"></p>
+</section>
+
+<footer>
+  <p>&copy; 2025 Екологічний моніторинг. Всі права захищено.</p>
+</footer>
+
+
+<!-- ✅ Кнопка встановлення додатку -->
+<button id="installBtn" style="display: none; padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">
+  📲 Встановити як додаток
+</button>
+
+<script>
+  let deferredPrompt;
+  const installBtn = document.getElementById("installBtn");
+
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    installBtn.style.display = "block";
+  });
+
+  installBtn.addEventListener("click", async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log("🧩 Результат встановлення:", outcome);
+      deferredPrompt = null;
+    }
+  });
+
+  // 🆕 Обробник після встановлення
+  window.addEventListener("appinstalled", () => {
+    console.log("✅ PWA встановлено");
+    installBtn.textContent = "✅ Додаток встановлено";
+    installBtn.disabled = true;
+    document.getElementById("swipe-container").style.display = "none";
+
+    const swipeButton = document.getElementById("swipe-button");
+    let startX = 0;
+    let isDragging = false;
+
+    // ✅ Спільна логіка свайпу
+    function handleSwipe() {
+      const currentLeft = parseInt(swipeButton.style.left || 0);
+      if (currentLeft > window.innerWidth - 100) {
+        installBtn.click(); // 🔥 Запускаємо встановлення
+      }
+      swipeButton.style.left = "0px";
+    }
+
+    // 👉 touch
+    swipeButton.addEventListener("touchstart", (e) => {
+      startX = e.touches[0].clientX;
+    });
+
+    swipeButton.addEventListener("touchmove", (e) => {
+      const moveX = e.touches[0].clientX - startX;
+      if (moveX > 0 && moveX < window.innerWidth - 60) {
+        swipeButton.style.left = `${moveX}px`;
+      }
+    });
+
+    swipeButton.addEventListener("touchend", () => {
+      handleSwipe(); // ✅ Виклик спільної функції
+    });
+
+    // 👉 mouse
+    swipeButton.addEventListener("mousedown", (e) => {
+      startX = e.clientX;
+      isDragging = true;
+    });
+
+    document.addEventListener("mousemove", (e) => {
+      if (!isDragging) return;
+      const moveX = e.clientX - startX;
+      if (moveX > 0 && moveX < window.innerWidth - 60) {
+        swipeButton.style.left = `${moveX}px`;
+      }
+    });
+
+    document.addEventListener("mouseup", () => {
+      if (!isDragging) return;
+      isDragging = false;
+      handleSwipe(); // ✅ Виклик спільної функції
+    });
+  });
+</script>
+
+
+
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAOib_11QyNZYlK2wIjsBEM2fWJf6CYiF0&callback=initMap" async defer></script>
+<script>
+  // Карта
+  let map;
+  function initMap() {
+    map = new google.maps.Map(document.getElementById("map"), {
+      center: { lat: 50.4501, lng: 30.5736 },
+      zoom: 12,
+    });
+
+    new google.maps.Marker({
+      position: { lat: 50.4501, lng: 30.5736 },
+      map: map,
+      title: 'Київ',
+    });
+
+    map.setOptions({ draggable: true, scrollwheel: true });
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(function(position) {
+        const userLocation = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        };
+        map.setCenter(userLocation);
+        new google.maps.Marker({
+          position: userLocation,
+          map: map,
+          title: 'Ваше місцезнаходження',
+        });
+      });
+    } else {
+      alert("Геолокація не підтримується вашим браузером.");
+    }
+  }
+
+  // Погода
+  async function fetchWeatherData() {
+    const API_KEY = "c0a820cfc0cc46cc51e67536bf08f5e3";
+    const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=50.4501&lon=30.5736&appid=${API_KEY}&units=metric&lang=uk`;
+    const response = await fetch(weatherUrl);
+    const data = await response.json();
+    const weatherIcon = document.getElementById("weather-icon");
+    if (data.weather && data.weather[0].main) {
+      if (data.weather[0].main === "Clear") {
+        weatherIcon.src = "https://media.giphy.com/media/3oKIPM7bgJBoK5vJUk/giphy.gif";
+      } else if (data.weather[0].main === "Rain") {
+        weatherIcon.src = "https://media.giphy.com/media/l0MYlTV2x6ZjbbkWg/giphy.gif";
+      } else {
+        weatherIcon.src = "https://media.giphy.com/media/d2lcHJTG5Tscg/giphy.gif";
+      }
+    }
+  }
+    fetchWeatherData();
+</script>
+
+<script>
+
+  function toggleForm(type) {
+    document.getElementById("loginForm").style.display = type === 'login' ? 'block' : 'none';
+    document.getElementById("registerForm").style.display = type === 'register' ? 'block' : 'none';
+    document.getElementById("authMessage").innerText = "";
+  }
+
+  async function handleRegister(e) {
+    e.preventDefault();
+
+    const email = document.getElementById("registerEmail").value;
+    const password = document.getElementById("registerPassword").value;
+    const region = document.getElementById("registerRegion").value;
+
+    console.log("📤 Надсилаємо реєстраційні дані:", { email, password, region });
+
+    try {
+      const res = await fetch("http://127.0.0.1:5000/api/register", {
+
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ email, password, region })
+      });
+
+      const data = await res.json();
+      console.log("📥 Відповідь від сервера:", data);
+
+      if (res.ok) {
+        document.getElementById("authMessage").innerText = data.message || "Успішна реєстрація!";
+        document.getElementById("authMessage").style.color = "green";
+      } else {
+        document.getElementById("authMessage").innerText = data.message || "Щось пішло не так.";
+        document.getElementById("authMessage").style.color = "red";
+      }
+    } catch (err) {
+      console.error("❌ Помилка під час запиту:", err);
+      document.getElementById("authMessage").innerText = "Не вдалося з'єднатися з сервером.";
+      document.getElementById("authMessage").style.color = "red";
+    }
+  }
+
+  async function handleLogin(e) {
+  e.preventDefault();
+
+  const email = document.getElementById("loginEmail").value;
+  const password = document.getElementById("loginPassword").value;
+
+  console.log("📤 Надсилаємо дані входу:", { email, password });
+
+  try {
+    const res = await fetch("http://127.0.0.1:5000/api/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ email, password })
+    });
+
+    const data = await res.json();
+    console.log("🔐 Відповідь на вхід:", data);
+
+    if (res.ok && data.token) {
+      localStorage.setItem("token", data.token);         // ✅ зберігаємо токен
+      window.location.href = "dashboard.html";           // ✅ переходимо в кабінет
+    } else {
+      document.getElementById("authMessage").innerText = data.message || "Невірний email або пароль";
+      document.getElementById("authMessage").style.color = "red";
+    }
+  } catch (err) {
+    console.error("❌ Помилка входу:", err);
+    document.getElementById("authMessage").innerText = "Не вдалося з'єднатися з сервером.";
+    document.getElementById("authMessage").style.color = "red";
+  }
+}// <- закриття handleLogin
+
+async function submitReport(e) {
+  e.preventDefault();
+
+  const type = document.getElementById("reportType").value;
+  const description = document.getElementById("reportDescription").value;
+
+  try {
+    const res = await fetch("http://127.0.0.1:5000/api/report", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ type, description })
+    });
+
+    const data = await res.json();
+    console.log("📤 Відповідь на сповіщення:", data);
+
+    if (res.ok) {
+      document.getElementById("reportMessage").innerText = data.message || "Сповіщення надіслано!";
+      document.getElementById("reportMessage").style.color = "green";
+      document.getElementById("reportForm").reset();
+    } else {
+      document.getElementById("reportMessage").innerText = data.message || "Помилка при надсиланні.";
+      document.getElementById("reportMessage").style.color = "red";
+    }
+  } catch (err) {
+    console.error("❌ Помилка при надсиланні:", err);
+    document.getElementById("reportMessage").innerText = "Не вдалося звʼязатись із сервером.";
+    document.getElementById("reportMessage").style.color = "red";
+  }
+}
+
+</script>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('service-worker.js')
+        .then(reg => console.log("✅ SW зареєстрований:", reg.scope))
+        .catch(err => console.error("❌ Помилка реєстрації SW:", err));
+    });
+  }
+</script>
+
+<!-- 📲 Swipe-to-install -->
+<div id="swipe-container">
+  <div id="swipe-button">
+    📲
+    <span style="font-size: 12px; display: block; color: black;">Проведіть →</span>
+  </div>
+</div>
+
+
+</body>
+</html>

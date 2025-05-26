@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Особистий кабінет</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f1f1f1;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 30px auto;
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+    }
+
+    h2 {
+      text-align: center;
+      color: #4CAF50;
+    }
+
+    .profile {
+      display: flex;
+      gap: 30px;
+      margin-bottom: 30px;
+      align-items: center;
+    }
+
+    .profile img {
+      width: 120px;
+      height: 120px;
+      object-fit: cover;
+      border-radius: 50%;
+      border: 2px solid #4CAF50;
+    }
+
+    .info {
+      font-size: 18px;
+    }
+
+    .info p {
+      margin: 10px 0;
+    }
+
+    .section-title {
+      font-weight: bold;
+      margin-top: 30px;
+      color: #333;
+    }
+
+    #reportList {
+      background: #f9f9f9;
+      padding: 15px;
+      border-radius: 5px;
+      max-height: 200px;
+      overflow-y: auto;
+      font-size: 15px;
+    }
+
+    .logout-btn {
+      display: block;
+      margin: 20px auto;
+      padding: 10px 20px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    canvas {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>👤 Особистий кабінет</h2>
+    <div class="profile">
+      <input type="file" id="avatarInput" accept="image/*" style="display: none;">
+<img id="avatar" src="https://via.placeholder.com/120" alt="Фото користувача" onclick="document.getElementById('avatarInput').click()">
+
+      <div class="info">
+        <p><strong>Email:</strong> <span id="email">Невідомо</span></p>
+        <p><strong>Регіон:</strong> <span id="region">Невідомо</span></p>
+        <p><strong>Адреса:</strong> <span id="address">Київ, Україна</span></p>
+        <p><strong>Профіль:</strong> <span id="role">Користувач</span></p>
+      </div>
+    </div>
+<button id="editBtn">Редагувати</button>
+
+<div id="editForm" style="display: none; margin-top: 15px;">
+  <label>Email: <input type="email" id="editEmail"></label><br>
+  <label>Регіон: <input type="text" id="editRegion"></label><br>
+  <button id="saveBtn">💾 Зберегти зміни</button>
+</div>
+
+    <div class="section-title">Статистика відвідувань</div>
+    <canvas id="visitsChart" height="100"></canvas>
+
+    <div class="section-title">Ваші сповіщення про проблеми</div>
+    <div id="reportList">
+      <p>Завантаження...</p>
+    </div>
+
+    <button class="logout-btn" onclick="logout()">Вийти</button>
+  </div>
+
+  <script>
+    // Демо-графік відвідувань
+    const ctx = document.getElementById('visitsChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'],
+        datasets: [{
+          label: 'Відвідування',
+          data: [3, 4, 2, 5, 6, 4, 1],
+          borderColor: '#4CAF50',
+          backgroundColor: 'rgba(76, 175, 80, 0.1)',
+          tension: 0.3
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false }
+        }
+      }
+    });
+
+    // Симуляція заповнення даних
+    const token = localStorage.getItem("token");
+    if (!token) {
+      window.location.href = "index.html";
+    }
+
+    fetch("http://127.0.0.1:5000/api/profile", {
+  headers: { Authorization: `Bearer ${token}` }
+})
+  .then(res => {
+    if (!res.ok) throw new Error("Профіль не знайдено");
+    return res.json();
+  })
+  .then(data => {
+    document.getElementById("email").innerText = data.email || "Невідомо";
+    document.getElementById("region").innerText = data.region || "Невідомо";
+    document.getElementById("address").innerText = data.address || "Невідомо";
+    document.getElementById("role").innerText = data.role || "Користувач";
+  })
+  .catch(err => {
+    console.error("❌ Помилка профілю:", err);
+    alert("Не вдалося завантажити профіль користувача.");
+  });
+
+
+    fetch("http://127.0.0.1:5000/api/reports", {
+      headers: { "Authorization": `Bearer ${token}` }
+    })
+      .then(res => res.json())
+      .then(data => {
+        const list = document.getElementById("reportList");
+        list.innerHTML = "";
+        if (data.length === 0) {
+          list.innerHTML = "<p>Жодного сповіщення ще не надсилалось.</p>";
+        } else {
+          data.forEach(rep => {
+            const p = document.createElement("p");
+            p.innerText = `• [${rep.type}] ${rep.description}`;
+            list.appendChild(p);
+          });
+        }
+      });
+
+    function logout() {
+      localStorage.removeItem("token");
+      window.location.href = "index.html";
+    }
+
+    // Обробка вибору аватара
+const avatarInput = document.getElementById("avatarInput");
+const avatarImg = document.getElementById("avatar");
+
+// Коли користувач обирає файл
+avatarInput.addEventListener("change", function () {
+  const file = this.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+
+  reader.onload = function (e) {
+    const imageDataUrl = e.target.result;
+
+    // Показуємо одразу на сторінці
+    avatarImg.src = imageDataUrl;
+
+    // Зберігаємо в localStorage
+    localStorage.setItem("avatar", imageDataUrl);
+  };
+
+  reader.readAsDataURL(file);
+});
+
+// При завантаженні сторінки — встановити збережене фото
+window.addEventListener("DOMContentLoaded", () => {
+  const savedAvatar = localStorage.getItem("avatar");
+  if (savedAvatar) {
+    avatarImg.src = savedAvatar;
+    const editBtn = document.getElementById("editBtn");
+const editForm = document.getElementById("editForm");
+const editEmail = document.getElementById("editEmail");
+const editRegion = document.getElementById("editRegion");
+
+editBtn.addEventListener("click", () => {
+  // Показати форму
+  editForm.style.display = "block";
+  editEmail.value = document.getElementById("email").innerText;
+  editRegion.value = document.getElementById("region").innerText;
+});
+
+document.getElementById("saveBtn").addEventListener("click", () => {
+  const newEmail = editEmail.value.trim();
+  const newRegion = editRegion.value.trim();
+
+  if (!newEmail || !newRegion) {
+    alert("Усі поля обов’язкові!");
+    return;
+  }
+
+  // Оновити на сторінці
+  document.getElementById("email").innerText = newEmail;
+  document.getElementById("region").innerText = newRegion;
+
+  // Можна зберегти в localStorage для демо
+  localStorage.setItem("userEmail", newEmail);
+  localStorage.setItem("userRegion", newRegion);
+
+  // 🔄 Надіслати зміни на сервер для MongoDB
+fetch("http://127.0.0.1:5000/api/profile/update", {
+  method: "PUT",
+  headers: {
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${token}`
+  },
+  body: JSON.stringify({ email: newEmail, region: newRegion })
+})
+  .then(res => res.json())
+  .then(data => {
+    console.log("✅ Профіль оновлено на сервері:", data.message);
+  })
+  .catch(err => {
+    console.error("❌ Помилка при оновленні профілю:", err);
+  });
+
+
+  // Сховати форму
+  editForm.style.display = "none";
+});
+const savedEmail = localStorage.getItem("userEmail");
+const savedRegion = localStorage.getItem("userRegion");
+
+if (savedEmail) document.getElementById("email").innerText = savedEmail;
+if (savedRegion) document.getElementById("region").innerText = savedRegion;
+
+  }
+});
+
+  </script>
+</body>
+</html>
+
