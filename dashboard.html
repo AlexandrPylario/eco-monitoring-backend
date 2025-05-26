@@ -143,7 +143,7 @@
       window.location.href = "index.html";
     }
 
-    fetch("http://127.0.0.1:5000/api/profile", {
+    fetch("https://eco-monitoring-backend-production.up.railway.app/api/profile", {
   headers: { Authorization: `Bearer ${token}` }
 })
   .then(res => {
@@ -162,7 +162,7 @@
   });
 
 
-    fetch("http://127.0.0.1:5000/api/reports", {
+    fetch("https://eco-monitoring-backend-production.up.railway.app/api/reports", {
       headers: { "Authorization": `Bearer ${token}` }
     })
       .then(res => res.json())
@@ -244,7 +244,7 @@ document.getElementById("saveBtn").addEventListener("click", () => {
   localStorage.setItem("userRegion", newRegion);
 
   // 🔄 Надіслати зміни на сервер для MongoDB
-fetch("http://127.0.0.1:5000/api/profile/update", {
+fetch("https://eco-monitoring-backend-production.up.railway.app/api/profile/update", {
   method: "PUT",
   headers: {
     "Content-Type": "application/json",
