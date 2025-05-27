@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Якість повітря</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #e0f7fa, #ffffff);
+    }
+    header {
+      background-color: #26a69a;
+      color: white;
+      text-align: center;
+      padding: 20px;
+    }
+    #map {
+      width: 100%;
+      height: 400px;
+    }
+    .content {
+      padding: 20px;
+    }
+    #chartContainer {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    #recommendations {
+      margin-top: 20px;
+      background: #f1f8e9;
+      padding: 15px;
+      border-left: 5px solid #66bb6a;
+    }
+    #bgToggle {
+      margin-top: 20px;
+      padding: 10px 20px;
+      background-color: #26a69a;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🌬️ Якість повітря</h1>
+    <p>Інтерактивна карта, графік та рекомендації</p>
+  </header>
+
+  <div id="map"></div>
+
+  <div class="content">
+    <div id="chartContainer">
+      <canvas id="airChart"></canvas>
+    </div>
+
+    <div id="recommendations">
+      <h3>Рекомендації:</h3>
+      <ul id="adviceList"></ul>
+    </div>
+
+    <button id="bgToggle">🎨 Змінити фон</button>
+  </div>
+
+  <script>
+    let map;
+
+    function initMap() {
+      const kyiv = { lat: 50.4501, lng: 30.5234 };
+      map = new google.maps.Map(document.getElementById("map"), {
+        zoom: 10,
+        center: kyiv,
+      });
+
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          const userPos = {
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+          };
+
+          map.setCenter(userPos);
+          new google.maps.Marker({ position: userPos, map, title: "Ваше місцезнаходження" });
+
+          const circle = new google.maps.Circle({
+            strokeColor: "#FF0000",
+            strokeOpacity: 0.8,
+            strokeWeight: 2,
+            fillColor: "#FF0000",
+            fillOpacity: 0.35,
+            map,
+            center: userPos,
+            radius: 3000,
+          });
+
+          fetchAirQuality(userPos.lat, userPos.lng);
+        },
+        err => {
+          alert("Не вдалося отримати місцезнаходження. Дані можуть бути неактуальні.");
+          fetchAirQuality(50.4501, 30.5234);
+        }
+      );
+    }
+
+    async function fetchAirQuality(lat, lon) {
+      const apiKey = "c0a820cfc0cc46cc51e67536bf08f5e3";
+      const url = `https://api.openweathermap.org/data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=${apiKey}`;
+
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (data && data.list && data.list.length > 0) {
+          const aqi = data.list[0].main.aqi;
+          const components = data.list[0].components;
+
+          new Chart(document.getElementById("airChart").getContext("2d"), {
+            type: "bar",
+            data: {
+              labels: ["PM2.5", "PM10", "O₃", "NO₂", "SO₂", "CO"],
+              datasets: [{
+                label: "μg/m³",
+                data: [
+                  components.pm2_5, components.pm10, components.o3,
+                  components.no2, components.so2, components.co
+                ],
+                backgroundColor: "#26a69a"
+              }]
+            },
+            options: {
+              responsive: true,
+              scales: { y: { beginAtZero: true } }
+            }
+          });
+
+          const recommendations = [
+            "Уникайте прогулянок поблизу доріг.",
+            "Тримайте вікна зачиненими при високому забрудненні.",
+            "Носіть маску, якщо відчуваєте утруднене дихання."
+          ];
+          document.getElementById("adviceList").innerHTML = recommendations.map(r => `<li>${r}</li>`).join("");
+
+          // [6] Надсилання в MongoDB (опціонально)
+          /*
+          await fetch("https://eco-monitoring-backend-production.up.railway.app/api/airdata", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ lat, lon, aqi, components })
+          });
+          */
+
+        } else {
+          alert("Дані про якість повітря недоступні для вашого регіону.");
+        }
+
+      } catch (err) {
+        console.error("Помилка API:", err);
+      }
+    }
+
+    // 🎨 Зміна фону
+    const bgToggle = document.getElementById("bgToggle");
+    let isDefault = true;
+    bgToggle.addEventListener("click", () => {
+      document.body.style.background = isDefault
+        ? "linear-gradient(135deg, #ffecb3, #ffe082)"
+        : "linear-gradient(135deg, #e0f7fa, #ffffff)";
+      isDefault = !isDefault;
+    });
+  </script>
+
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAOib_11QyNZYlK2wIjsBEM2fWJf6CYiF0&callback=initMap" async defer></script>
+</body>
+</html>
+

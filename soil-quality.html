@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Якість ґрунту</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #f0f4c3, #ffffff);
+    }
+    header {
+      background-color: #8bc34a;
+      color: white;
+      text-align: center;
+      padding: 20px;
+    }
+    #map {
+      width: 100%;
+      height: 500px;
+    }
+    .content {
+      padding: 20px;
+    }
+    #bgToggle {
+      margin-top: 20px;
+      padding: 10px 20px;
+      background-color: #8bc34a;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🌱 Якість ґрунту</h1>
+    <p>Інтерактивна карта ґрунтів України</p>
+  </header>
+
+  <div id="map"></div>
+
+  <div class="content">
+    <button id="bgToggle">🎨 Змінити фон</button>
+  </div>
+
+  <script>
+    let map;
+    function initMap() {
+      const ukraineCenter = { lat: 48.3794, lng: 31.1656 };
+      map = new google.maps.Map(document.getElementById("map"), {
+        zoom: 6,
+        center: ukraineCenter,
+      });
+
+      // Додавання шару KML з картою ґрунтів
+      const kmlLayer = new google.maps.KmlLayer({
+        url: 'https://www.etomesto.com/kml/ukraine_soil_map.kml',
+        map: map
+      });
+
+      // Обробка помилки геолокації
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const userPos = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+            };
+            new google.maps.Marker({ position: userPos, map, title: "Ваше місцезнаходження" });
+            map.setCenter(userPos);
+          },
+          (error) => {
+            alert("Не вдалося отримати ваше місцезнаходження. Дані можуть бути неактуальними.");
+          }
+        );
+      } else {
+        alert("Геолокація не підтримується вашим браузером.");
+      }
+    }
+
+    // Зміна фону
+    const bgToggle = document.getElementById("bgToggle");
+    let isDefault = true;
+    bgToggle.addEventListener("click", () => {
+      document.body.style.background = isDefault
+        ? "linear-gradient(135deg, #dcedc8, #f0f4c3)"
+        : "linear-gradient(135deg, #f0f4c3, #ffffff)";
+      isDefault = !isDefault;
+    });
+  </script>
+
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAOib_11QyNZYlK2wIjsBEM2fWJf6CYiF0&callback=initMap" async defer></script>
+</body>
+</html>
+
+
+
