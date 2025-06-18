@@ -1,12 +1,13 @@
 const CACHE_NAME = 'eco-monitoring-v1';
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/dashboard.html',
-  '/manifest.json',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png'
+  './',
+  './index.html',
+  './dashboard.html',
+  './manifest.json',
+  './icons/icon-192.png',
+  './icons/icon-512.png'
 ];
+
 
 // Кешування під час встановлення
 self.addEventListener('install', (event) => {
