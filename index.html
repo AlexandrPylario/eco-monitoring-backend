@@ -204,72 +204,26 @@
     installBtn.style.display = "block";
   });
 
+  // Натискання кнопки завжди показує prompt
   installBtn.addEventListener("click", async () => {
     if (deferredPrompt) {
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
       console.log("🧩 Результат встановлення:", outcome);
-      deferredPrompt = null;
+    } else {
+      alert("🚫 Встановлення недоступне. Спробуйте знову пізніше.");
     }
   });
 
-  // 🆕 Обробник після встановлення
+  // Не ховаємо кнопку після встановлення
   window.addEventListener("appinstalled", () => {
     console.log("✅ PWA встановлено");
-    installBtn.textContent = "✅ Додаток встановлено";
-    installBtn.disabled = true;
-    document.getElementById("swipe-container").style.display = "none";
-
-    const swipeButton = document.getElementById("swipe-button");
-    let startX = 0;
-    let isDragging = false;
-
-    // ✅ Спільна логіка свайпу
-    function handleSwipe() {
-      const currentLeft = parseInt(swipeButton.style.left || 0);
-      if (currentLeft > window.innerWidth - 100) {
-        installBtn.click(); // 🔥 Запускаємо встановлення
-      }
-      swipeButton.style.left = "0px";
-    }
-
-    // 👉 touch
-    swipeButton.addEventListener("touchstart", (e) => {
-      startX = e.touches[0].clientX;
-    });
-
-    swipeButton.addEventListener("touchmove", (e) => {
-      const moveX = e.touches[0].clientX - startX;
-      if (moveX > 0 && moveX < window.innerWidth - 60) {
-        swipeButton.style.left = `${moveX}px`;
-      }
-    });
-
-    swipeButton.addEventListener("touchend", () => {
-      handleSwipe(); // ✅ Виклик спільної функції
-    });
-
-    // 👉 mouse
-    swipeButton.addEventListener("mousedown", (e) => {
-      startX = e.clientX;
-      isDragging = true;
-    });
-
-    document.addEventListener("mousemove", (e) => {
-      if (!isDragging) return;
-      const moveX = e.clientX - startX;
-      if (moveX > 0 && moveX < window.innerWidth - 60) {
-        swipeButton.style.left = `${moveX}px`;
-      }
-    });
-
-    document.addEventListener("mouseup", () => {
-      if (!isDragging) return;
-      isDragging = false;
-      handleSwipe(); // ✅ Виклик спільної функції
-    });
+    installBtn.textContent = "📲 Встановити ще раз";
+    installBtn.disabled = false;
+    installBtn.style.display = "block";
   });
 </script>
+
 
 
 
@@ -452,13 +406,6 @@ async function submitReport(e) {
   }
 </script>
 
-<!-- 📲 Swipe-to-install -->
-<div id="swipe-container">
-  <div id="swipe-button">
-    📲
-    <span style="font-size: 12px; display: block; color: black;">Проведіть →</span>
-  </div>
-</div>
 
 
 </body>
